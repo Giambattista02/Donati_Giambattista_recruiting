@@ -98,7 +98,16 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
+    // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, 1);  //Turn on LED
+    // HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, 1);  //Turn on LED
+	  // HAL_Delay(500); //500ms Delay
+	  // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, 0);  //Turn of LED
+    // HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, 0);  //Turn of LED
+	  // HAL_Delay(500); //500ms Delay
 
+    HAL_GPIO_TogglePin(LD2_GPIO_Port,LD2_Pin);
+    HAL_Delay(100);
+    
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
