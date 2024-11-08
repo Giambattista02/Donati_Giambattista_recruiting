@@ -18,6 +18,8 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include <stdio.h>
+#include <string.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -49,7 +51,8 @@ DMA_HandleTypeDef hdma_usart2_tx;
 
 uint16_t vin=0;
 char msg[20];
-uint8_t data[]="Hello world\n ";
+char input[20];
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -60,10 +63,24 @@ static void MX_USART2_UART_Init(void);
 static void MX_ADC1_Init(void);
 /* USER CODE BEGIN PFP */
 
+void wait_request();
+void pause();
+void warning();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+uint8_t rxdata[20];
+uint8_t final_data[20];
+uint8_t temp[2];
+int cont;
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart2)
+{
+  memcpy(rxdata+cont, temp, 1);
+  if(++cont>=20) cont=0;
+  HAL_UART_Receive_IT(&huart2, temp, 1);
+}
 
 /* USER CODE END 0 */
 
@@ -99,7 +116,11 @@ int main(void)
   MX_DMA_Init();
   MX_USART2_UART_Init();
   MX_ADC1_Init();
+
   /* USER CODE BEGIN 2 */
+  wait_request();
+
+ 
 
   /* USER CODE END 2 */
 
@@ -108,24 +129,79 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-    if(HAL_GPIO_ReadPin(digitale_GPIO_Port, digitale_Pin)==GPIO_PIN_SET)
+    
+
+    // HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, GPIO_PIN_SET);
+    // HAL_Delay(200);
+    // HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, GPIO_PIN_RESET);
+    // HAL_Delay(200);
+
+    if(temp[0] == '\n')
+    {
+      memcpy(final_data, rxdata, cont);
+      cont = 0;
+    }
+
+    HAL_UART_Receive(&huart2, (uint8_t*)&input, 20, HAL_MAX_DELAY);
+    if(input[0]=='L')
     {
       HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, GPIO_PIN_SET);
       HAL_Delay(200);
+      HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, GPIO_PIN_RESET);
     }
 
-    HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, GPIO_PIN_RESET);
-    HAL_Delay(200);
     HAL_ADC_Start(&hadc1);
     HAL_ADC_PollForConversion(&hadc1, 20);
     vin=HAL_ADC_GetValue(&hadc1);
     sprintf(msg, "Vin: %hu \n\r", vin);
     HAL_UART_Transmit(&huart2, (uint8_t*)&msg, 20, HAL_MAX_DELAY);
+    HAL_UART_Transmit(&huart2, final_data, 20, HAL_MAX_DELAY);
     HAL_Delay(500);
+
+    
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
 }
+
+void wait_request()
+{
+  while(HAL_GPIO_ReadPin(bottone_GPIO_Port, bottone_Pin)==GPIO_PIN_SET)
+  {
+
+  }
+  char data[]="programma iniziato\n ";
+  HAL_UART_Transmit(&huart2, (uint8_t*)&data, strlen(data), HAL_MAX_DELAY);
+
+}
+
+// void pause()
+// {
+//   while(HAL_GPIO_ReadPin(bottone_GPIO_Port, bottone_Pin)==GPIO_PIN_SET)
+//   {
+//     uint8_t data[]="Stato Pause\n ";
+//     HAL_UART_Transmit(&huart2, data, strlen(data), HAL_MAX_DELAY);
+
+//     HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, GPIO_PIN_SET);
+//     HAL_Delay(1000);
+//     HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, GPIO_PIN_RESET);
+//     HAL_Delay(1000);
+//   }
+// }
+
+// void warning()
+// {
+//   uint8_t data[]="WARNING\n ";
+//   HAL_UART_Transmit(&huart2, data, strlen(data), HAL_MAX_DELAY);
+//   HAL_Delay(500);
+// }
+
+
+
+
+
+
+
 
 /**
   * @brief System Clock Configuration
