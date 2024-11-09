@@ -66,6 +66,7 @@ static void MX_ADC1_Init(void);
 void wait_request();
 void pause();
 void warning();
+void error();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -75,12 +76,12 @@ uint8_t final_data[20];
 uint8_t temp[2];
 int cont;
 
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart2)
-{
-  memcpy(rxdata+cont, temp, 1);
-  if(++cont>=20) cont=0;
-  HAL_UART_Receive_IT(&huart2, temp, 1);
-}
+// void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart2)
+// {
+//   memcpy(rxdata+cont, temp, 1);
+//   if(++cont>=20) cont=0;
+//   HAL_UART_Receive_IT(&huart2, temp, 2);
+// }
 
 /* USER CODE END 0 */
 
@@ -119,6 +120,9 @@ int main(void)
 
   /* USER CODE BEGIN 2 */
   wait_request();
+  //pause();
+  //warning();
+  //error();
 
  
 
@@ -136,18 +140,23 @@ int main(void)
     // HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, GPIO_PIN_RESET);
     // HAL_Delay(200);
 
-    if(temp[0] == '\n')
-    {
-      memcpy(final_data, rxdata, cont);
-      cont = 0;
-    }
+    // if(temp[0] == '\n')
+    // {
+    //   memcpy(final_data, rxdata, cont);
+    //   cont = 0;
+    // }
 
-    HAL_UART_Receive(&huart2, (uint8_t*)&input, 20, HAL_MAX_DELAY);
-    if(input[0]=='L')
+    // HAL_UART_Receive(&huart2, (uint8_t*)&input, 20, 1000);
+    // if(input[0]=='L')
+    // {
+    //   HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, GPIO_PIN_SET);
+    //   HAL_Delay(200);
+    //   HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, GPIO_PIN_RESET);
+    // }
+
+    if(HAL_GPIO_ReadPin(digitale_GPIO_Port, digitale_Pin)== GPIO_PIN_SET)
     {
-      HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, GPIO_PIN_SET);
-      HAL_Delay(200);
-      HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, GPIO_PIN_RESET);
+      error();
     }
 
     HAL_ADC_Start(&hadc1);
@@ -155,7 +164,7 @@ int main(void)
     vin=HAL_ADC_GetValue(&hadc1);
     sprintf(msg, "Vin: %hu \n\r", vin);
     HAL_UART_Transmit(&huart2, (uint8_t*)&msg, 20, HAL_MAX_DELAY);
-    HAL_UART_Transmit(&huart2, final_data, 20, HAL_MAX_DELAY);
+    //HAL_UART_Transmit(&huart2, final_data, 20, HAL_MAX_DELAY);
     HAL_Delay(500);
 
     
@@ -175,26 +184,44 @@ void wait_request()
 
 }
 
-// void pause()
-// {
-//   while(HAL_GPIO_ReadPin(bottone_GPIO_Port, bottone_Pin)==GPIO_PIN_SET)
-//   {
-//     uint8_t data[]="Stato Pause\n ";
-//     HAL_UART_Transmit(&huart2, data, strlen(data), HAL_MAX_DELAY);
+void pause()
+{
+  while(HAL_GPIO_ReadPin(bottone_GPIO_Port, bottone_Pin)==GPIO_PIN_SET)
+  {
+    char data[20]="Stato Pause\n ";
+    HAL_UART_Transmit(&huart2, (uint8_t*)&data, strlen(data), HAL_MAX_DELAY);
 
-//     HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, GPIO_PIN_SET);
-//     HAL_Delay(1000);
-//     HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, GPIO_PIN_RESET);
-//     HAL_Delay(1000);
-//   }
-// }
+    HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, GPIO_PIN_SET);
+    HAL_Delay(1000);
+    HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, GPIO_PIN_RESET);
+    HAL_Delay(1000);
+  }
+}
 
-// void warning()
-// {
-//   uint8_t data[]="WARNING\n ";
-//   HAL_UART_Transmit(&huart2, data, strlen(data), HAL_MAX_DELAY);
-//   HAL_Delay(500);
-// }
+void warning()
+{
+  while(HAL_GPIO_ReadPin(bottone_GPIO_Port, bottone_Pin)==GPIO_PIN_SET)
+  {
+    char data[20]="WARNING\n ";
+    HAL_UART_Transmit(&huart2, (uint8_t*)&data, strlen(data), HAL_MAX_DELAY);
+    HAL_Delay(500);
+  }
+}
+
+void error()
+{
+  while(HAL_GPIO_ReadPin(bottone_GPIO_Port, bottone_Pin)==GPIO_PIN_SET)
+  {
+    char data[20]="ERROR\n ";
+    HAL_UART_Transmit(&huart2, (uint8_t*)&data, strlen(data), HAL_MAX_DELAY);
+    HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, GPIO_PIN_SET);
+    HAL_Delay(200);
+    HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, GPIO_PIN_RESET);
+    HAL_Delay(200);
+  }
+  NVIC_SystemReset();
+
+}
 
 
 
