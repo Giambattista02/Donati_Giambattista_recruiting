@@ -18,8 +18,8 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -75,7 +75,7 @@ void wait_request();
 void pause();
 void warning();
 void error();
-void sensor_error();
+void listening();
 void read_sensor();
 /* USER CODE END PFP */
 
@@ -126,7 +126,6 @@ int main(void)
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
   wait_request();
-
  
 
   /* USER CODE END 2 */
@@ -158,7 +157,7 @@ int main(void)
     // }
 
     HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, GPIO_PIN_SET);
-    sensor_error();
+    listening();
     //read_sensor();
     
     /* USER CODE BEGIN 3 */
@@ -179,6 +178,7 @@ void wait_request()
 
 void pause()
 {
+  HAL_Delay(100);
   while(HAL_GPIO_ReadPin(bottone_GPIO_Port, bottone_Pin)==GPIO_PIN_SET)
   {
     char data[20]="Stato Pause\n ";
@@ -216,16 +216,24 @@ void error()
 
 }
 
-void sensor_error()
+void listening()
 {
-  timer_counter=__HAL_TIM_GET_COUNTER(&htim2);
-  while (HAL_GPIO_ReadPin(digitale_GPIO_Port, digitale_Pin)==GPIO_PIN_RESET)
+  read_sensor();
+  if(HAL_GPIO_ReadPin(bottone_GPIO_Port, bottone_Pin)==GPIO_PIN_RESET)
   {
-    read_sensor();
+    pause();
   }
+  if(HAL_GPIO_ReadPin(digitale_GPIO_Port, digitale_Pin)==GPIO_PIN_SET)
+  {
+    timer_counter=__HAL_TIM_GET_COUNTER(&htim2);
+    while (HAL_GPIO_ReadPin(digitale_GPIO_Port, digitale_Pin)==GPIO_PIN_SET)
+    {}
+  }
+  
   if (__HAL_TIM_GET_COUNTER(&htim2) - timer_counter >=20000)
   {
     warning();
+    timer_counter=0;
   }
   
 }
@@ -239,6 +247,8 @@ void read_sensor()
     HAL_UART_Transmit(&huart2, (uint8_t*)&msg, 20, HAL_MAX_DELAY);
     HAL_Delay(100);
 }
+
+
 
 /**
   * @brief System Clock Configuration
@@ -365,9 +375,9 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 999;
+  htim2.Init.Prescaler = 45000;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 65535;
+  htim2.Init.Period = 4294967295;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
